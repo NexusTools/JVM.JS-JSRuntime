@@ -1,0 +1,18 @@
+JVM.Flags = {
+    PUBLIC: 0,
+    PRIVATE: 1,
+    PROTECTED: 2,
+    STATIC: 3,
+    FINAL: 4,
+    SYNCHRONIZED: 5,
+    VOLATILE: 6,
+    VARARGS: 7,
+    TRANSIENT: 8,
+    NATIVE: 9,
+    INTERFACE: 10,
+    ABSTRACT: 11,
+    STRICT: 12,
+    SYNTHETIC: 13,
+    ENUM: 14,
+    DEPRECATED: 15
+};
