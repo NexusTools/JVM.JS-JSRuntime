@@ -542,6 +542,12 @@
                                     } else if(impl.type == "method" && impl.opcode == JVM.Opcodes.INVOKESPECIAL) {
                                         impl.opcode = JVM.Opcodes.INVOKESPECIALREF;
                                         impl.ref = addMethodRef(impl.owner, impl.name + "$" + impl.signature.raw);
+                                    } else if(impl.type == "field" && impl.opcode == JVM.Opcodes.PUTSTATIC) {
+                                        impl.opcode = JVM.Opcodes.PUTSTATICREF;
+                                        impl.ref = addRef(impl.class);
+                                    } else if(impl.type == "field" && impl.opcode == JVM.Opcodes.GETSTATIC) {
+                                        impl.opcode = JVM.Opcodes.GETSTATICREF;
+                                        impl.ref = addRef(impl.class);
                                     } else if(impl.type == "ldc" && impl.hasOwnProperty("stringValue")) {
 					source += "\nvar string" + stringRefs + ";";
                                         bodysource += "\n\tvar string" + stringRefs + " = $.jvm.createString(";
@@ -900,6 +906,13 @@
                                                 bodysource += depth + "$.classloader.loadClassImpl(" + JSON.stringify(impl.class) + ").$prop[" + JSON.stringify(impl.name) + "] = STACK.pop();";
                                                 break;
 
+                                            case JVM.Opcodes.PUTSTATICREF:
+                                                bodysource += depth + impl.ref + ".$prop[" + JSON.stringify(impl.name) + "] = STACK.pop();";
+                                                break;
+
+                                            case JVM.Opcodes.GETSTATICREF:
+                                                bodysource += depth + "STACK.push(" + impl.ref + ".$prop[" + JSON.stringify(impl.name) + "]);";
+                                                break;
 
                                             case JVM.Opcodes.GETFIELD:
                                                 if(JVM.settings.dumpStack)
@@ -943,6 +956,10 @@
 
                                     case "insn":
                                         switch(impl.opcode) {
+                                            case JVM.Opcodes.POP:
+                                                bodysource += depth + "STACK.pop();";
+                                                break;
+
                                             case JVM.Opcodes.ATHROW:
                                                 bodysource += depth + "throw STACK.pop();";
                                                 break;

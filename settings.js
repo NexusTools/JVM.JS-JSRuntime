@@ -3,7 +3,7 @@
         convertStack: true,
         dumpImpl: false,
         dumpStack: false,
-        dumpSource: false,
+        dumpSource: true,
         dumpOptimizations: false,
         verbose: true,
 
