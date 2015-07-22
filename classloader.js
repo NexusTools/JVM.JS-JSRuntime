@@ -490,22 +490,32 @@
                                 });
                             }
 
-                            var ref = {}, methodRef = {}, addRef, addMethodRef;
+                            var ref = {}, methodRef = {}, addRef, addMethodRef, addStringRef, stringRef = [];
                             if(JVM.settings.allowOpt) {
+                                var classRefCount = 0;
                                 addRef = function(name) {
-                                    var id = name.replace(/[^\w\$]/g, "_");
                                     if(!ref.hasOwnProperty(name))
-                                        ref[name] = id;
-                                    return id;
+                                        return ref[name] = "class" + (classRefCount++);
+                                    return ref[name];
                                 };
 
+                                var methodRefCount = 0;
                                 addMethodRef = function(jclass, name) {
+                                    var nameID = jclass + "@" + name;
                                     var classID = addRef(jclass);
 
-                                    var id = classID + "_$$_" + name.replace(/[^\w\$]/g, "_");
-                                    if(!methodRef.hasOwnProperty(name))
-                                        methodRef[name] = [classID, id];
-                                    return [classID, id];
+                                    if(!methodRef.hasOwnProperty(nameID))
+                                        methodRef[nameID] = [classID, "method" + (methodRefCount++), name];
+                                    return methodRef[nameID];
+                                };
+
+                                addStringRef = function(value) {
+                                  var index = stringRef.indexOf(value);
+                                  if(index == -1) {
+                                    index = stringRef.length;
+                                    stringRef.push(value);
+                                  }
+                                  return index;
                                 };
 
                                 // Basic no argument super
@@ -548,27 +558,56 @@
                                             return;
                                     }
 
-                                    if(impl.type == "method" && impl.opcode == JVM.Opcodes.INVOKESTATIC) {
-                                        impl.opcode = JVM.Opcodes.INVOKESTATICREF;
-                                        impl.ref = addMethodRef(impl.owner, impl.name + "$" + impl.signature.raw);
-                                    } else if(impl.type == "method" && impl.opcode == JVM.Opcodes.INVOKESPECIAL) {
-                                        impl.opcode = JVM.Opcodes.INVOKESPECIALREF;
-                                        impl.ref = addMethodRef(impl.owner, impl.name + "$" + impl.signature.raw);
-                                    } else if(impl.type == "field" && impl.opcode == JVM.Opcodes.PUTSTATIC) {
+                                    switch(impl.type) {
+                                      case "method":
+                                        switch(impl.opcode) {
+                                          case JVM.Opcodes.INVOKESTATIC:
+                                            impl.opcode = JVM.Opcodes.INVOKESTATICREF;
+                                            impl.ref = addMethodRef(impl.owner, impl.name + "$" + impl.signature.raw);
+                                            break;
+                                          case JVM.Opcodes.INVOKEVIRTUAL:
+                                            /*if(impl.owner == "java/lang/StringBuilder" && impl.name == "append") {
+                                              impl.opcode = JVM.Opcodes.APPEND;
+                                              crash = true;
+                                              break;
+                                            }*/
+
+                                            var implSig = impl.name + "$" + impl.signature.raw;
+                                            try {
+                                              var ownerImpl = $self.loadClassImpl(impl.owner);
+                                              var funcImpl = ownerImpl.$method(implSig);
+                                              if(funcImpl.$flags.indexOf(JVM.Flags.FINAL)) {
+                                                impl.ref = addMethodRef(impl.owner, implSig);
+                                                impl.opcode = JVM.Opcodes.INVOKESPECIALREF;
+                                              }
+                                            } catch(e) {}
+                                            break;
+                                          case JVM.Opcodes.INVOKESPECIAL:
+                                            impl.opcode = JVM.Opcodes.INVOKESPECIALREF;
+                                            impl.ref = addMethodRef(impl.owner, impl.name + "$" + impl.signature.raw);
+
+                                            if(impl.name == "<init>") {
+                                              console.log("Optimizing _", impl.name);
+                                              impl.initref = addMethodRef(impl.owner, "_");
+                                            }
+                                            break;
+                                        }
+                                        break;
+                                    }
+
+                                    if(impl.type == "field" && impl.opcode == JVM.Opcodes.PUTSTATIC) {
                                         impl.opcode = JVM.Opcodes.PUTSTATICREF;
                                         impl.ref = addRef(impl.class);
                                     } else if(impl.type == "field" && impl.opcode == JVM.Opcodes.GETSTATIC) {
                                         impl.opcode = JVM.Opcodes.GETSTATICREF;
                                         impl.ref = addRef(impl.class);
                                     } else if(impl.type == "ldc" && impl.hasOwnProperty("stringValue")) {
-					source += "\nvar string" + stringRefs + ";";
+					                              /*source += "\nvar string" + stringRefs + ";";
                                         bodysource += "\n\tvar string" + stringRefs + " = $.jvm.createString(";
                                         bodysource += JSON.stringify(impl.stringValue);
-                                        bodysource += ");"
+                                        bodysource += ");"*/
 
-                                        impl.stringRef = stringRefs;
-                                        delete impl.stringValue;
-                                        stringRefs++;
+                                        impl.stringRef = addStringRef(impl.stringValue);
                                     } else if(impl.type == "jump" && impl.opcode == JVM.Opcodes.JUMP)
                                         skipUntilLabel = true;
 
@@ -679,8 +718,14 @@
                                     }
                                 }
 
-                                if(Object.keys(ref).length) {
+                                if(Object.keys(ref).length || stringRef.length) {
                                     initSource = "function() {";
+                                    for(var i=0; i<stringRef.length; i++) {
+                                        source += "\nvar string" + i + ";";
+                                        initSource += "\n\tstring" + i + " = $.jvm.createString(";
+                                        initSource += JSON.stringify(stringRef[i]);
+                                        initSource += ");"
+                                    }
                                     for(var key in ref) {
                                         source += "\nvar " + ref[key] + ";";
                                         initSource += "\n\t" + ref[key] + " = $.classloader.loadClassImpl(";
@@ -692,7 +737,7 @@
 
                                             source += "\nvar " + data[1] + ";";
                                             initSource += "\n\t" + data[1] + " = " + data[0];
-                                            initSource += ".$method(" + JSON.stringify(key) + ");";
+                                            initSource += ".$method(" + JSON.stringify(data[2]) + ");";
                                         }
                                     }
                                     initSource += "\n}";
@@ -1123,6 +1168,7 @@
                                         break;
 
                                     case "super":
+                                        console.log("Has ref", impl);
                                         bodysource += depth + impl.ref[1] + ".call(this)";
                                         break;
 
@@ -1147,13 +1193,19 @@
                                                 || impl.opcode == JVM.Opcodes.INVOKESPECIALREF) {
                                             bodysource += depth + "TARGET=STACK.splice(STACK.length-";
                                             bodysource += argumentCount+1;
-                                            bodysource += ", 1)[0]";
+                                            bodysource += ", 1)[0];";
 
                                             if($new && impl.name == "<init>") {
-                                                bodysource += depth + ((impl.ref && impl.ref[0]) || "$.classloader.$classes." + ownerID) + ".$impl._.call(TARGET);";
+                                                if(impl.initref)
+                                                  bodysource += depth + impl.initref[1] + ".call(TARGET);";
+                                                else
+                                                  bodysource += depth + ((impl.ref && impl.ref[0]) || "$.classloader.loadedClasses[" + JSON.stringify(ownerID) + "]") + ".$impl._.call(TARGET);";
                                                 $new = null;
                                             }
-                                            target = (impl.ref && impl.ref[1]) || "$.classloader.$classes." + ownerID + ".$impl['" + impl.name + "$" + impl.signature.raw + "']";
+                                            if(impl.ref)
+                                              target = impl.ref[1];
+                                            else
+                                              target = "$.classloader.loadedClasses[" + JSON.stringify(ownerID) + "].$impl['" + impl.name + "$" + impl.signature.raw + "']";
                                         } else if(impl.opcode == JVM.Opcodes.INVOKEINTERFACE
                                                 || impl.opcode == JVM.Opcodes.INVOKEVIRTUAL) {
                                             bodysource += depth + "TARGET=STACK.splice(STACK.length-";
@@ -1164,7 +1216,7 @@
                                         } else if(impl.opcode == JVM.Opcodes.INVOKESTATICREF)
                                             target = impl.ref[1];
                                         else if(impl.opcode == JVM.Opcodes.INVOKESTATIC)
-                                            target = "$.classloader.$classes." + ownerID + ".$impl['" + impl.name + "$" + impl.signature.raw + "']";
+                                            target = "$.classloader.loadedClasses[" + JSON.stringify(ownerID) + "].$impl['" + impl.name + "$" + impl.signature.raw + "']";
                                         else
                                             throw new Error("Unknown method opcode: " + impl.opcode);
 
@@ -1342,6 +1394,9 @@
                         });
                     }
                     func = func[1];
+                    Object.defineProperty(func, "$flags", {
+                      value: section.access
+                    });
 
                     if(section.name == "<clinit>")
                         inits.push(func);
@@ -1413,3 +1468,4 @@
         return impl;
     };
 })(this);
+
