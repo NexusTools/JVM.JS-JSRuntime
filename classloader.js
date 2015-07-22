@@ -202,9 +202,11 @@
     JavaClassLoader.prototype.defineNativeImpl = function(name, impl) {
         if(!(name in this.definedClasses))
             throw new JavaErrors.ClassNotFoundException(name + " has not been defined.");
+        if(name in this.nativeClasses)
+            throw new JavaErrors.VirtualMachineError(name + " already has a native implementation.");
 
         if(JVM.settings.verbose)
-            console.log("Registering Native implementation", name, impl);
+            console.trace("Registering Native implementation", name, impl);
 
         this.nativeClasses[name] = impl;
         var loadedClass = this.loadedClasses[name];
@@ -341,6 +343,16 @@
 
                         var native = $self.nativeClasses[name];
                         $native[id] = (native && native[id]) || function() {
+                            var native = $self.nativeClasses[name];
+                            if(native && native[id]) {
+                              $native[id] = native[id];
+                              return native[id].apply(this, arguments);
+                            }
+
+                            if(!native)
+                              console.error("Native class no registered", native);
+                            else
+                              console.error("Cannot find ", id, "in", native);
                             throw new JavaErrors.UnsatisfiedLinkError(classID + "." + id);
                         };
 

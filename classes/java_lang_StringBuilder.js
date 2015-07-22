@@ -13,7 +13,7 @@
                     value: string.$prop._value
                 });
             },
-            
+
             'append$(Ljava/lang/String;)Ljava/lang/StringBuilder;': function($, value) {
                 this.$prop._buffer += value && value.$prop._value || "null";
                 return this;
@@ -22,11 +22,11 @@
                 this.$prop._buffer += value;
                 return this;
             },
-            'append$(S)Llava/lang/StringBuilder;': function($, value) {
+            'append$(S)Ljava/lang/StringBuilder;': function($, value) {
                 this.$prop._buffer += value;
                 return this;
             },
-            'append$(D)Llava/lang/StringBuilder;': function($, value) {
+            'append$(D)Ljava/lang/StringBuilder;': function($, value) {
                 this.$prop._buffer += value;
                 return this;
             },
