@@ -3,9 +3,9 @@
         convertStack: true,
         dumpImpl: false,
         dumpStack: false,
-        dumpSource: true,
+        dumpSource: false,
         dumpOptimizations: false,
-        verbose: true,
+        verbose: false,
 
         // Optimizations
         allowOpt: true,

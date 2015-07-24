@@ -190,9 +190,9 @@
     };
     JavaClassLoader.prototype.defineClass = function(name, interfaces, parent, impl) {
         if(name in this.loadedClasses)
-            throw new VirtualMachineError(name.replace(/\//g, '.') + " is already loaded.");
+            throw new JavaErrors.VirtualMachineError(name.replace(/\//g, '.') + " is already loaded.");
         if(name in this.definedClasses)
-            throw new VirtualMachineError(name.replace(/\//g, '.') + " is already defined.");
+            throw new JavaErrors.VirtualMachineError(name.replace(/\//g, '.') + " is already defined.");
 
         if(JVM.settings.verbose)
             console.log("Defining class", name);
@@ -246,7 +246,7 @@
             }
 
             Object.defineProperty(impl, "$jvm", {
-                value: jvm
+                value: this.jvm
             });
             Object.defineProperty(impl, "$impl", {
                 value: imp
@@ -258,12 +258,14 @@
             var parentClass;
             if(name != "java/lang/Object") {
 
+                if(JVM.settings.verbose)
                   console.log(name, "Loading parent", $impl);
                 parentClass = this.loadClassImpl($impl['$super'] || "java/lang/Object");
                 if(parentClass == null)
                   throw new JavaErrors.NullPointerException();
 
-                console.log(name, parentClass);
+                if(JVM.settings.verbose)
+                  console.log(name, parentClass);
 
                 Object.defineProperty(impl, "$super", {
                     value: parentClass
@@ -541,12 +543,10 @@
                                 }
 
                                 if(optimized.length == 1) {
-                                    if(section.access.indexOf(JVM.Flags.ABSTRACT) != -1)
-                                        optimized.unshift({
-                                            type: "virtual"
-                                        });
-                                    else
-                                        throw new JavaErrors.VirtualMachineError("No implementation exists for " + methodID);
+                                    //if(section.access.indexOf(JVM.Flags.ABSTRACT) != -1)
+                                      optimized.unshift({
+                                          type: "virtual"
+                                      });
                                 }
 
                                 var moreOptimized = [], stringRefs = 0, skipUntilLabel;
@@ -586,10 +586,8 @@
                                             impl.opcode = JVM.Opcodes.INVOKESPECIALREF;
                                             impl.ref = addMethodRef(impl.owner, impl.name + "$" + impl.signature.raw);
 
-                                            if(impl.name == "<init>") {
-                                              console.log("Optimizing _", impl.name);
+                                            if(impl.name == "<init>")
                                               impl.initref = addMethodRef(impl.owner, "_");
-                                            }
                                             break;
                                         }
                                         break;
@@ -1168,7 +1166,8 @@
                                         break;
 
                                     case "super":
-                                        console.log("Has ref", impl);
+                                        if(JVM.settings.verbose)
+                                          console.log("Has ref", impl);
                                         bodysource += depth + impl.ref[1] + ".call(this)";
                                         break;
 
@@ -1371,10 +1370,10 @@
                         try {
                             return eval(source);
                         } catch(e) {
-                            console.error("Failed to compile", source);
-									 console.log(e.message, e.stack);
+                           console.error("Failed to compile", source);
+			                     console.log(e.message, e.stack);
 
-                            throw e;
+                           throw e;
                         }
                     }).call(helper);
 
@@ -1464,8 +1463,8 @@
             init();
         });
 
-        console.log("Compiled", name, impl);
+        if(JVM.settings.verbose)
+          console.log("Compiled", name, impl);
         return impl;
     };
 })(this);
-
