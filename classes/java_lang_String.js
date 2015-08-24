@@ -30,7 +30,11 @@
             }),
             'valueOf$(D)Ljava/lang/String;': java_static_wrap(function($, val) {
                 return $.jvm.createString(""+val);
-            })
+            }),
+
+				'length$()I': function($) {
+					return this.$prop._value.length;
+				}
         }
     });
 })(JVM);

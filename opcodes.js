@@ -31,6 +31,8 @@
         DLOAD: 24,
         ALOAD: 25,
 
+		  AALOAD: 50,
+
         LSTORE: 55,
 
         IASTORE: 79,
@@ -136,6 +138,8 @@
         NEW: 187,
         NEWARRAY: 188,
         ANEWARRAY: 189,
+		  ARRAYLENGTH: 190,
+		
 
         ATHROW: 191,
         CHECKCAST: 192,

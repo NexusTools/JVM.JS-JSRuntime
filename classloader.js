@@ -939,6 +939,7 @@
 
                                             case JVM.Opcodes.NEWARRAY:
                                             case JVM.Opcodes.ANEWARRAY:
+                                                bodysource += depth + "STACK.pop(); // Discard size";
                                                 bodysource += depth + "STACK.push([]);";
                                                 break;
 
@@ -986,11 +987,15 @@
 
                                             case JVM.Opcodes.GETALOAD:
                                                 bodysource += depth + "STACK.push(";
-                                                impl.index--;
-                                                if(impl.index < 0)
-                                                    bodysource += "this";
-                                                else
-                                                    bodysource += ARGSNAME + "[" + impl.index + "]";
+																if(isStatic)
+																	bodysource += ARGSNAME + "[" + impl.index + "]";
+																else {
+		                                             impl.index--;
+		                                             if(impl.index < 0)
+		                                                 bodysource += "this";
+		                                             else
+		                                                 bodysource += ARGSNAME + "[" + impl.index + "]";
+																}
                                                 bodysource += ".$prop[" + JSON.stringify(impl.name) + "]);";
                                                 break;
 
@@ -1013,6 +1018,20 @@
                                         switch(impl.opcode) {
 														  case JVM.Opcodes.INEG:
                                                 bodysource += depth + "STACK.push(-STACK.pop());";
+																break;
+
+														  case JVM.Opcodes.ARRAYLENGTH:
+                                                bodysource += depth + "STACK.push(STACK.pop().length);";
+																break;
+
+														  case JVM.Opcodes.AALOAD:
+                                                bodysource += depth + "STACK.push(STACK.splice(STACK.length-2, 1)[0][STACK.pop()]);";
+																
+																break;
+
+														  case JVM.Opcodes.AASTORE:
+                                                bodysource += depth + "STACK.splice(STACK.length-3, 1)[0][STACK.splice(STACK.length-2, 1)[0]] = STACK.pop();";
+																
 																break;
 
                                             case JVM.Opcodes.POP:
@@ -1318,9 +1337,13 @@
 
                                         break;
 
+												case "iinc":
+                                       bodysource += depth + ARGSNAME + "[" + (impl.index-1) + "] += " + impl.by + ";";
+													break;
+
                                     default:
                                         console.error(impl);
-                                        throw new Error("Unknown implementation section");
+                                        throw new Error("Unknown implementation section: " + impl.type);
                                 }
                                 if(JVM.settings.dumpImpl)
                                     bodysource += depth;

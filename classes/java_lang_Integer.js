@@ -18,6 +18,9 @@
 					var int = $.jvm.createObject("java/lang/Integer");
 					int.$prop._value = parseInt(val.$prop._value);
 					return int;
+				},
+				'toHexString$(I)Ljava/lang/String;': function($, val) {
+                return $.jvm.createString(val.toString(16));
 				}
         },
         '$super': 'java/lang/Number'
