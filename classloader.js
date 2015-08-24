@@ -359,7 +359,7 @@
                         };
 
                         source += "\nvar impl = $.native['" + id + "'];";
-                        source += "\nvar helper = {jvm: $.jvm, 'shared': $.nativeData, impl: $.impl};";
+                        source += "\nvar helper = {'jvm': $.jvm, 'shared': $.nativeData, 'classloader': $.classloader, 'impl': $.impl};";
                         bodysource += "\n\treturn impl.call(this, helper";
                         for(var i=0; i<section.sigparts.args.length; i++) {
                             bodysource += ", arguments[" + i + "]";
@@ -948,7 +948,7 @@
                                         break;
 
                                     case "virtual":
-                                        bodysource += depth + "throw new $.error.VirtualMachineError('Pure Virtual Method');";
+                                        bodysource += depth + "throw new $.error.VirtualMachineError('Pure Virtual Method: ' + " + JSON.stringify(section.name) + ");";
                                         break;
 
                                     case "field":
@@ -1011,6 +1011,10 @@
 
                                     case "insn":
                                         switch(impl.opcode) {
+														  case JVM.Opcodes.INEG:
+                                                bodysource += depth + "STACK.push(-STACK.pop());";
+																break;
+
                                             case JVM.Opcodes.POP:
                                                 bodysource += depth + "STACK.pop();";
                                                 break;

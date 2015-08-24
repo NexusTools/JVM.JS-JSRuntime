@@ -8,9 +8,17 @@
                 });
                 return int;
             }),
+				'intValue$()I': function($) {
+					return this.$prop._value;				
+				},
             'toString$()Ljava/lang/String;': function($) {
                 return $.jvm.createString(""+this.$prop._value);
-            }
+            },
+				'valueOf$(Ljava/lang/String;)Ljava/lang/Integer;': function($, val) {
+					var int = $.jvm.createObject("java/lang/Integer");
+					int.$prop._value = parseInt(val.$prop._value);
+					return int;
+				}
         },
         '$super': 'java/lang/Number'
     });

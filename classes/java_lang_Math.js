@@ -12,7 +12,16 @@
             },
             'cos$(D)D': function($, val) {
                 return Math.cos(val);
-            }
+            },
+            'random$()D': function($) {
+                return Math.random();
+            },
+				'min$(DD)D': function($, val1, val2) {
+					return Math.min(val1, val2);				
+				},
+				'max$(DD)D': function($, val1, val2) {
+					return Math.max(val1, val2);				
+				}
         }
     });
 })(JVM);
