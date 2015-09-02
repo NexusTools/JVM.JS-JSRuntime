@@ -24,6 +24,14 @@
           return h;
         }
       },
+      
+      'getBytes$()[B': function($) {
+        var bytes = [];
+        var str = this.$prop._value;
+        for(var i=0; i<str.length; i++)
+          bytes[i] = str.charCodeAt(i);
+        return bytes;
+      },
 
       'valueOf$(I)Ljava/lang/String;': java_static_wrap(function($, val) {
         return $.jvm.createString(""+val);
@@ -42,4 +50,5 @@
     }
   });
 })(JVM);
+
 

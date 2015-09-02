@@ -31,7 +31,8 @@
         DLOAD: 24,
         ALOAD: 25,
 
-		  AALOAD: 50,
+		    AALOAD: 50,
+		    BALOAD: 51,
 
         LSTORE: 55,
 
@@ -77,7 +78,13 @@
         LREM: 113,
         FREM: 114,
         DREM: 115,
-		  INEG: 116,
+      
+		    INEG: 116,
+        
+        IAND: 126,
+        LAND: 127,
+        IOR: 128,
+        LOR: 129,
 
         I2L: 133,
         I2F: 134,
@@ -138,12 +145,14 @@
         NEW: 187,
         NEWARRAY: 188,
         ANEWARRAY: 189,
-		  ARRAYLENGTH: 190,
+		    ARRAYLENGTH: 190,
 		
 
         ATHROW: 191,
         CHECKCAST: 192,
-
+      
+        IFNULL: 198,
+        IFNONNULL: 199,
 
         INVOKESTATICREF: 0x01ff,
         INVOKESPECIALREF: 0x02ff,
@@ -155,3 +164,4 @@
         PUTSTATICREF: 0x16ff
     };
 })(JVM);
+

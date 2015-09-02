@@ -247,7 +247,7 @@
                     impl.opcode = JVM.Opcodes.INVOKESTATICREF;
                     impl.ref = addMethodRef(impl.owner, impl.name + "$" + impl.signature.raw);
                     break;
-                  case JVM.Opcodes.INVOKEVIRTUAL:
+                  /*case JVM.Opcodes.INVOKEVIRTUAL:
                     var implSig = impl.name + "$" + impl.signature.raw;
                     try {
                       var ownerImpl = $data.self.loadClassImpl(impl.owner);
@@ -257,7 +257,7 @@
                         impl.opcode = JVM.Opcodes.INVOKESPECIALREF;
                       }
                     } catch(e) {}
-                    break;
+                    break;*/
                   case JVM.Opcodes.INVOKESPECIAL:
                     impl.opcode = JVM.Opcodes.INVOKESPECIALREF;
                     impl.ref = addMethodRef(impl.owner, impl.name + "$" + impl.signature.raw);
@@ -439,7 +439,7 @@
         }
 
         bodysource += depth;
-        var $new, depthStack = [];
+        var depthStack = [];
         var resetDepth = function(to) {
           while(depthStack.length) {
             depth = depth.substring(0, depth.length-1);
@@ -510,9 +510,11 @@
               var more = "\t";
               switch(impl.opcode) {
                 case JVM.Opcodes.IF_ICMPEQ:
+                case JVM.Opcodes.IF_ACMPEQ:
                   bodysource += depth + "if(STACK.pop() === STACK.pop())";
                   break;
 
+                case JVM.Opcodes.IF_ICMPNE:
                 case JVM.Opcodes.IF_ACMPNE:
                   bodysource += depth + "if(STACK.pop() !== STACK.pop())";
                   break;
@@ -555,6 +557,14 @@
 
                 case JVM.Opcodes.IFNE:
                   bodysource += depth + "if(STACK.pop())";
+                  break;
+                  
+                case JVM.Opcodes.IFNULL:
+                  bodysource += depth + "if(STACK.pop() == null)";
+                  break;
+                  
+                case JVM.Opcodes.IFNONNULL:
+                  bodysource += depth + "if(STACK.pop() != null)";
                   break;
 
                 case JVM.Opcodes.GOTO:
@@ -610,7 +620,6 @@
                     bodysource += depth + "STACK[STACK.length-1].$class={$className:'UNINITIALIZED'};";
                     bodysource += depth + "STACK[STACK.length-1].$prop={};";
                   }
-                  $new = true;
                   break;
 
                 case JVM.Opcodes.NEWARRAY:
@@ -701,11 +710,12 @@
                   break;
 
                 case JVM.Opcodes.AALOAD:
+                case JVM.Opcodes.BALOAD:
                   bodysource += depth + "STACK.push(STACK.splice(STACK.length-2, 1)[0][STACK.pop()]);";
-
                   break;
 
                 case JVM.Opcodes.AASTORE:
+                case JVM.Opcodes.BASTORE:
                   bodysource += depth + "STACK.splice(STACK.length-3, 1)[0][STACK.splice(STACK.length-2, 1)[0]] = STACK.pop();";
 
                   break;
@@ -786,6 +796,18 @@
                 case JVM.Opcodes.LDIV:
                   bodysource += depth + "TARGET=STACK.pop();";
                   bodysource += depth + "STACK[STACK.length-1] = STACK[STACK.length-1] / TARGET;";
+                  break;
+
+                case JVM.Opcodes.IAND:
+                case JVM.Opcodes.LAND:
+                  bodysource += depth + "TARGET=STACK.pop();";
+                  bodysource += depth + "STACK[STACK.length-1] = STACK[STACK.length-1] & TARGET;";
+                  break;
+
+                case JVM.Opcodes.IOR:
+                case JVM.Opcodes.LOR:
+                  bodysource += depth + "TARGET=STACK.pop();";
+                  bodysource += depth + "STACK[STACK.length-1] = STACK[STACK.length-1] | TARGET;";
                   break;
 
                 case JVM.Opcodes.IREM:
@@ -895,12 +917,12 @@
                 bodysource += argumentCount+1;
                 bodysource += ", 1)[0];";
 
-                if($new && impl.name == "<init>") {
+                // TODO: Detect super calls
+                if(impl.name == "<init>") {
                   if(impl.initref)
                     bodysource += depth + impl.initref[1] + ".call(TARGET);";
                   else
                     bodysource += depth + ((impl.ref && impl.ref[0]) || "$.classloader.loadedClasses[" + JSON.stringify(ownerID) + "]") + ".$impl._.call(TARGET);";
-                  $new = null;
                 }
                 if(impl.ref)
                   target = impl.ref[1];
@@ -977,6 +999,11 @@
                 case JVM.Opcodes.SIPUSH:
                   bodysource += depth + "STACK.push(" + impl.operand + ");";
                   break;
+                  
+                case JVM.Opcodes.NEWARRAY:
+                  bodysource += depth + "STACK.pop(); // Discard size";
+                  bodysource += depth + "STACK.push([]);";
+                  break;
 
                 default:
                   throw new Error("Unknown int opcode: " + impl.opcode);
@@ -1029,6 +1056,7 @@
 
 
       } catch(e) {
+        console.warn(e);
         console.log("Unfinished source `" + source + bodysource + "`");
         throw e;
       }
@@ -1091,7 +1119,7 @@
           e = $data.self.$jvm.convertError(e);
           java_printstacktrace(e);
 
-          $self.$impl[id] = function() {
+          $data.$impl[id] = function() {
             throw e;
           }
         }
@@ -1111,13 +1139,13 @@
       func = java_static_wrap(func);
     func = $data.$impl[id] = func;
 
-    //if(section.access.indexOf(JVM.Flags.PUBLIC) != -1)
-    //    $publicImpl[id] = func;
-
 
     func.toString = function() {
       return methodID;
     };
   }
 })(JVM);
+
+
+
 

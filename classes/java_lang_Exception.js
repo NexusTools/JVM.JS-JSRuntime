@@ -6,6 +6,12 @@
             },
             '<init>$(Ljava/lang/String;)V': function($, msg) {
                 $.jclass.$super.$impl['<init>$(Ljava/lang/String;)V'].call(this, msg);
+            },
+            '<init>$(Ljava/lang/String;Ljava/lang/Throwable;)V': function($, msg, cause) {
+                $.jclass.$super.$impl['<init>$(Ljava/lang/String;)V'].call(this, msg, cause);
+            },
+            '<init>$(Ljava/lang/Throwable;)V': function($, cause) {
+                $.jclass.$super.$impl['<init>$(Ljava/lang/String;)V'].call(this, cause);
             }
         },
         '$super': 'java/lang/Throwable'

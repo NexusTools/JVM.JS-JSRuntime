@@ -71,6 +71,9 @@
   }
   function createUserAccess(impl) {
     return function() {
+      if("$class" in this)
+        return;
+      
       Object.defineProperty(this, '$class', {
         value: impl
       });
@@ -284,7 +287,6 @@
     var classDefinition = this.definedClasses[name];
     if(!classDefinition)
       throw new JavaErrors.ClassNotFoundException(classID + " is not defined in this JVM instance.");
-    this.loadedClasses[name] = true;
 
     if(JVM.settings.verbose)
       console.log("Loading class", name);
@@ -292,6 +294,7 @@
     var friendlyName;
     var impl = this.initImpl(name, friendlyName = name.replace(/[^\w\$]/g, "_"));
     var parentClass = this.loadClassImpl(classDefinition[1]);
+    this.loadedClasses[name] = impl;
 
     var inits = [], $prop = {}, $impl = {};
     var $self = this;
@@ -382,5 +385,7 @@
     return impl;
   };
 })(this);
+
+
 
 
