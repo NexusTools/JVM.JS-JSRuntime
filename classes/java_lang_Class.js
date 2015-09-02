@@ -18,10 +18,10 @@
         });
       },
       'getSimpleName$()Ljava/lang/String;': function($) {
-        return this.$prop._simpleName;
+        return $.jvm.createString(this.$prop._simpleName);
       },
       'getName$()Ljava/lang/String;': function($) {
-        return this.$prop._name;
+        return $.jvm.createString(this.$prop._name);
       }
     }
   });

@@ -6,7 +6,7 @@
           $.itclass = $.jvm.ClassLoader.loadClassImpl("java/util/ServiceLoader$1");
         
         var target = this.$native._impl;
-        var className = target.$class.$impl['getName$()Ljava/lang/String;'].call(target);
+        var className = target.$class.$impl['getName$()Ljava/lang/String;'].call(target).$prop._value;
         console.log("iterator", className, this.$native);
         
         var obj = $.itclass.$new();
