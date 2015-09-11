@@ -15,24 +15,24 @@
   };
   JVM.prototype.createJumper = function(RET) {
     var jumper = [];
-    var pos = -1;
-    jumper.start = function(target) {
-      if(pos > -1)
-        return;
-      jumper.next(target);
-    };
-    jumper.jump = function(to, target) {
-      pos = to-1;
-      jumper.next(target);
-      throw new RET();
-    }
-    jumper.next = function(target) {
-      pos ++;
-      if(pos >= jumper.length)
-        return;
-      jumper[pos].call(target);
-    };
+    jumper.start = function(target, pos) {
+      pos = pos || 0;
+		var count = 0;
+      
+      while(pos < jumper.length) {
+        var ret = jumper[pos].call(target);
+        if(ret != undefined)
+          pos = ret;
+        else
+          pos ++;
 
+			count ++;
+			if(count > 5000)
+				throw new Error("Overflow");
+      }
+      
+      throw new RET();
+    };
     return jumper;
   }
   var current, stack = [];
@@ -184,3 +184,4 @@
       throw new JavaErrors.VirtualMachineError(classname.replace(/\//g, '.') + " has no entry point, `public static void main(java.lang.String[] args)` required.", "java/lang/UnsupportedOperationException");
   };
 })(this);
+

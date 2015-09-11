@@ -3,7 +3,16 @@
     '$impl': {
       '<init>$()V': function() {
         Object.defineProperty(this.$prop, "_value", {
-          value: value
+          value: ""
+        });
+      },
+      '<init>$([C)V': function($, chararray) {
+        var str = "";
+        chararray.forEach(function(c) {
+          str += c;
+        });
+        Object.defineProperty(this.$prop, "_value", {
+          value: str
         });
       },
       'hashCode$()I': function($) {
@@ -39,6 +48,15 @@
       'valueOf$(D)Ljava/lang/String;': java_static_wrap(function($, val) {
         return $.jvm.createString(""+val);
       }),
+      'valueOf$(J)Ljava/lang/String;': java_static_wrap(function($, val) {
+        return $.jvm.createString(""+val);
+      }),
+      'valueOf$(F)Ljava/lang/String;': java_static_wrap(function($, val) {
+        return $.jvm.createString(""+val);
+      }),
+      'valueOf$(Ljava/lang/Object;)Ljava/lang/String;': java_static_wrap(function($, val) {
+        return val.toString();
+      }),
 
       'length$()I': function($) {
         return this.$prop._value.length;
@@ -47,8 +65,10 @@
       'toString$()Ljava/lang/String;': function($) {
         return this;
       }
-    }
+    },
+	 '$super': 'java/lang/CharSequence'
   });
 })(JVM);
+
 
 

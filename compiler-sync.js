@@ -78,6 +78,8 @@
                   case JVM.Opcodes.D2I:
                   case JVM.Opcodes.I2D:
                   case JVM.Opcodes.D2F:
+                  case JVM.Opcodes.MONITORENTER:
+                  case JVM.Opcodes.MONITOREXIT:
                     return;
                 }
               default:
@@ -98,6 +100,8 @@
                   case JVM.Opcodes.D2I:
                   case JVM.Opcodes.I2D:
                   case JVM.Opcodes.D2F:
+                  case JVM.Opcodes.MONITORENTER:
+                  case JVM.Opcodes.MONITOREXIT:
                     return;
                 }
               default:
@@ -120,8 +124,6 @@
             }
           });
           optimized = tryCatchImpl;
-
-          console.error("Detected try catches", tryCatchPending);
         }
 
         if(true) { // Loose
@@ -463,7 +465,6 @@
                 break;
 
               case BLOCK_LABEL:
-                bodysource += depth + "\tJUMPER.next(this);";
                 bodysource += depth + "});";
                 break;
 
@@ -486,6 +487,14 @@
           TRY: BLOCK_TRY,
           LABEL: BLOCK_LABEL
         }
+        var isInsideLabel = function() {
+          var yes = false;
+          depthStack.forEach(function(stack) {
+            if(stack[0] == BLOCK_LABEL)
+              yes = true;
+          })
+          return yes;
+        }
 
         var tryCatch = [];
         optimized.forEach(function(impl) {
@@ -507,6 +516,8 @@
               break;
 
             case "jump":
+              if(JVM.settings.dumpStack)
+                bodysource += depth + "console.log(\"IF\", $.jvm.dumpStack(STACK));";
               var more = "\t";
               switch(impl.opcode) {
                 case JVM.Opcodes.IF_ICMPEQ:
@@ -575,7 +586,17 @@
                   throw new Error("Unknown jump opcode: " + impl.opcode);
               }
 
-              bodysource += depth + more + "JUMPER.jump(" + labels.indexOf(impl.name) + ", this); // JUMP";
+              
+              bodysource += depth + more;
+              var inLabel = isInsideLabel();
+              if(inLabel)
+                bodysource += "return ";
+              else
+                bodysource += "JUMPER.start(this, ";
+              bodysource += labels.indexOf(impl.name);
+              if(!inLabel)
+                bodysource += ")";
+              bodysource += "; // JUMP";
               break;
 
             case "label":
@@ -614,12 +635,16 @@
 
             case "type":
               switch(impl.opcode) {
+                case JVM.Opcodes.INSTANCEOF:
+                  bodysource += depth + "TARGET=STACK.pop();";
+                  bodysource += depth + "if(TARGET == null)";
+                  bodysource += depth + "\tSTACK.push(0);";
+                  bodysource += depth + "else";
+                  bodysource += depth + "\tSTACK.push(java_instanceof(TARGET, " + JSON.stringify(impl.signature) + ") ? 1 : 0);";
+                  break;
+                  
                 case JVM.Opcodes.NEW:
                   bodysource += depth + "STACK.push($.jvm.newObject());";
-                  if(JVM.settings.dumpStack) {
-                    bodysource += depth + "STACK[STACK.length-1].$class={$className:'UNINITIALIZED'};";
-                    bodysource += depth + "STACK[STACK.length-1].$prop={};";
-                  }
                   break;
 
                 case JVM.Opcodes.NEWARRAY:
@@ -711,11 +736,13 @@
 
                 case JVM.Opcodes.AALOAD:
                 case JVM.Opcodes.BALOAD:
+                case JVM.Opcodes.CALOAD:
                   bodysource += depth + "STACK.push(STACK.splice(STACK.length-2, 1)[0][STACK.pop()]);";
                   break;
 
                 case JVM.Opcodes.AASTORE:
                 case JVM.Opcodes.BASTORE:
+                case JVM.Opcodes.CASTORE:
                   bodysource += depth + "STACK.splice(STACK.length-3, 1)[0][STACK.splice(STACK.length-2, 1)[0]] = STACK.pop();";
 
                   break;
@@ -736,6 +763,7 @@
                   bodysource += depth + "throw new RET();";
                   break;
 
+                case JVM.Opcodes.LCMP:
                 case JVM.Opcodes.FCMPL:
                 case JVM.Opcodes.DCMPL:
                   bodysource += depth + "TARGET=[STACK.pop(),STACK.pop()];";
@@ -1043,7 +1071,9 @@
               break;
 
             case "iinc":
-              bodysource += depth + ARGSNAME + "[" + (impl.index-1) + "] += " + impl.by + ";";
+              if(!isStatic)
+                impl.index--;
+              bodysource += depth + ARGSNAME + "[" + impl.index + "] += " + impl.by + ";";
               break;
 
             default:
@@ -1082,7 +1112,7 @@
     source += bodysource;
     source += "])";
 
-    if(JVM.settings.dumpSource)
+    if(crash || JVM.settings.dumpSource)
       console.log("Compiled source `" + source + "`");
     if(crash)// || methodID == "webtest.WebTest.b.run")
       throw new Error();
@@ -1139,13 +1169,8 @@
       func = java_static_wrap(func);
     func = $data.$impl[id] = func;
 
-
     func.toString = function() {
       return methodID;
     };
   }
 })(JVM);
-
-
-
-

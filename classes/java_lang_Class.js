@@ -22,7 +22,11 @@
       },
       'getName$()Ljava/lang/String;': function($) {
         return $.jvm.createString(this.$prop._name);
+      },
+      'desiredAssertionStatus$()Z': function() {
+        return false;
       }
     }
   });
 })(JVM);
+

@@ -109,11 +109,13 @@
 
     var parent = obj.$class;
     while(parent != null) {
-      if(method in parent.$impl)
-        return obj.$vcache[method] = parent.$impl[method];
+      try {
+        if(method in parent.$impl)
+          return obj.$vcache[method] = parent.$impl[method];
+      } catch(e) {}
       parent = parent.$super;
     }
-    throw new JavaErrors.VirtualMachineError("Cannot resolve implementation for `" + method + "` of `" + obj.$class + "`");
+    throw new JavaErrors.VirtualMachineError("Cannot resolve implementation for `" + method + "` of " + JSON.stringify(obj.$class));
   };
   JavaClassLoader.prototype.initImpl = function(name, friendlyName) {
     friendlyName = friendlyName || name.replace(/[^\w\$]/g, "_");
@@ -385,6 +387,7 @@
     return impl;
   };
 })(this);
+
 
 
 

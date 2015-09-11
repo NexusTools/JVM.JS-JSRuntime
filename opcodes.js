@@ -33,6 +33,7 @@
 
 		    AALOAD: 50,
 		    BALOAD: 51,
+		    CALOAD: 51,
 
         LSTORE: 55,
 
@@ -102,6 +103,7 @@
         I2C: 146,
         I2S: 147,
 
+        LCMP: 148,
         FCMPL: 149,
         FCMPG: 150,
         DCMPL: 151,
@@ -150,9 +152,14 @@
 
         ATHROW: 191,
         CHECKCAST: 192,
+
+        INSTANCEOF: 193,
+        MONITORENTER: 194,
+        MONITOREXIT: 195,
       
         IFNULL: 198,
         IFNONNULL: 199,
+      
 
         INVOKESTATICREF: 0x01ff,
         INVOKESPECIALREF: 0x02ff,
@@ -164,4 +171,5 @@
         PUTSTATICREF: 0x16ff
     };
 })(JVM);
+
 
